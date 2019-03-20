@@ -1,4 +1,4 @@
-float PROP_BRAZO = 0.021;
+float PROP_BRAZO = 0.021; // fuente: https://exrx.net/Kinesiology/Segments
 
 public class Cuerpo {
   protected float tam;
@@ -98,10 +98,7 @@ void dibujarBarra() {
     
     }
   }
-  
-  
   popMatrix();
-  
 }
 
 void mostrarStats(boolean mostrarTodo) {
@@ -112,7 +109,7 @@ void mostrarStats(boolean mostrarTodo) {
   text("Masa: " + josefa.masa() + " kg",30,14);
   text("Velocidad: " + nf(josefa.vel(),0,2) + " m/s",30,28);
   text(nf(3.6*josefa.vel(),0,2) + " km/h", 95, 42);
-  if (true) {
+  if (mostrarTodo) {
     pushMatrix();
     translate(width-width/5,0);
     text("Brazo: ",10,-14);
