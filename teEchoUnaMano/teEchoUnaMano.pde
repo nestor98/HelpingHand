@@ -1,4 +1,4 @@
-float PROP_BRAZO = 0.021; // fuente: https://exrx.net/Kinesiology/Segments
+float PROP_BRAZO = 0.021;
 
 public class Cuerpo {
   protected float tam;
@@ -11,7 +11,7 @@ public class Cuerpo {
     this.tam = tam/10; //en decenas de cm
     this.x = x;
     this.masa = masa;
-    this.v = v; 
+    this.v = v*10/frameRate; 
   }
   
   void dibujar() {
@@ -66,7 +66,7 @@ public class Astronauta extends Cuerpo {
     float masaTot = this.masa;
     this.masa -= this.brazo.masa; // Nueva masa del astronauta
     this.deUnaPieza = false;      // Yep
-    this.brazo.v = vBrazo;        // Nuevas posiciones y velocidades del brazo
+    this.brazo.v = vBrazo*10/frameRate;        // Nuevas posiciones y velocidades del brazo
     this.brazo.x = this.x;
     this.v = (this.v * masaTot - this.brazo.masa * vBrazo) / this.masa; // Velocidad final del astronauta
   }
@@ -98,7 +98,10 @@ void dibujarBarra() {
     
     }
   }
+  
+  
   popMatrix();
+  
 }
 
 void mostrarStats(boolean mostrarTodo) {
@@ -128,7 +131,7 @@ void setup() {
     fondo = loadImage("image.png");
     background(fondo);
     stroke(255);
-    josefa = new Astronauta(160, 0, 60, 1);
+    josefa = new Astronauta(160, 0, 60, 6);
     
 }
     
@@ -147,7 +150,7 @@ void draw() {
     josefa.dibujar();
     josefa.actualizarPos();
     if (josefa.pos() > width/2 && !josefa.manca()) {
-      josefa.lanzarBrazo(100);
+      josefa.lanzarBrazo(80);
     }
     fill(255);
     popMatrix();
