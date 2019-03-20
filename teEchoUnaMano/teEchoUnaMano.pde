@@ -68,7 +68,7 @@ public class Astronauta extends Cuerpo {
     this.deUnaPieza = false;      // Yep
     this.brazo.v = vBrazo*10/frameRate;        // Nuevas posiciones y velocidades del brazo
     this.brazo.x = this.x;
-    this.v = (this.v * masaTot - this.brazo.masa * vBrazo) / this.masa; // Velocidad final del astronauta
+    this.v = (this.v * masaTot - this.brazo.masa * this.brazo.v) / this.masa; // Velocidad final del astronauta
   }
   
   boolean manca() {
@@ -150,7 +150,7 @@ void draw() {
     josefa.dibujar();
     josefa.actualizarPos();
     if (josefa.pos() > width/2 && !josefa.manca()) {
-      josefa.lanzarBrazo(80);
+      josefa.lanzarBrazo(500);
     }
     fill(255);
     popMatrix();
