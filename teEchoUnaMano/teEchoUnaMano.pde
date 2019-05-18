@@ -1,5 +1,20 @@
+/* ****************************************
+ * Autores: Nestor Monzon & A. Burrimiento
+ * Ultima mod: 18/05/19
+ * ****************************************
+ */
+
+import controlP5.*;
+
+ControlP5 cp5; // biblio con cosas de GUI
+
+int slider = 100;
+
+
 float PROP_BRAZO = 0.021;
 float SLOWMO = 1; // inicialmente el tiempo avanza normal
+boolean reset = true;
+boolean finReset = false;
 
 public class Cuerpo {
   protected float tam;
@@ -7,6 +22,7 @@ public class Cuerpo {
   protected float masa;
   protected float v;
   protected float ultimaX; // Para colisiones, guardamos la ultima pos
+  protected int cuentaLanzado;
   
   // tam en cm, x coordenada, masa en kg, v en m/s
   Cuerpo(float tam, float x, float masa, float v) {
@@ -56,7 +72,7 @@ public class Cuerpo {
     boolean otroDentro = ( ( (this.pos()-this.tam()/2.0) <= (otro.pos()-otro.tam()/2.0) ) && ( (this.pos()+this.tam()/2.0) >= (otro.pos()-otro.tam()/2) ) || ( (this.pos()-this.tam()/2.0) <= (otro.pos()+otro.tam()/2.0) ) && ( (this.pos()+this.tam()/2.0) >= (otro.pos()+otro.tam()/2) ) );
     // this esta entre la ultima posicion de otro y la actual -> otro lo acaba de atravesar
     boolean atravesado = ( this.pos() <= max(otro.pos(),otro.ultimaPos()) ) && ( this.pos() >= min(otro.pos(), otro.ultimaPos()) );
-    return otroDentro || atravesado;
+    return (otroDentro || atravesado) && cuentaLanzado<=0;
 }
   
   
@@ -66,21 +82,26 @@ public class Cuerpo {
 public class Astronauta extends Cuerpo {
   private Cuerpo brazo;
   private boolean deUnaPieza;
-  
   Astronauta(float tam, float x, float masa, float v) {
     super(tam, x, masa, v);
     brazo = new Cuerpo(tam * PROP_BRAZO * 20, x, masa * PROP_BRAZO, v); // Tamaño * 20 para que se vea algo
     this.deUnaPieza = true;
+    cuentaLanzado=0;
   }
   
   void dibujar(){
     super.dibujar();
     if (!deUnaPieza) {
       brazo.dibujar();
+      if (cuentaLanzado>0) { // (guarrada de las colisiones.......)
+        cuentaLanzado--;
+      }
     }
   }
   
   void lanzarBrazo(float vBrazo) {
+    // guarrada de arreglo para las colisiones:
+    cuentaLanzado = 10;
     //momFin = momIni
     //momFin = vIni * mIni
     //mSinB*vSinB + mBrazo*vBrazo = vIni * mIni
@@ -92,12 +113,10 @@ public class Astronauta extends Cuerpo {
     this.brazo.v = vBrazo*10/frameRate;        // Nuevas posiciones y velocidades del brazo
     this.brazo.x = this.x;
     this.v = (this.v * masaTot - this.brazo.masa * this.brazo.v) / this.masa; // Velocidad final del astronauta
-    
-    
   }
   
   // Para cuando se pone la simulacion con el tiempo al reves. Modela un choque inelastico supongo, en el que el astronauta
-  // recupera su brazo (y su masa)
+  // recupera su brazo (y su masa...)
   void atraparBrazo(float vBrazo) {
     //momFin = momIni
     //momFin = vIni * mIni
@@ -143,6 +162,21 @@ void dibujarBarra() {
   
 }
 
+void mostrarControles() {
+  pushMatrix(); 
+  translate (3.0*width/7,3*height/4); // salen en medio
+  fill(255,30);
+  rect(-40,-40,250,120);
+  fill(255);
+  text("CONTROLES:",-30,-18);
+  text("R: Reset",0,0);
+  text("Espacio: Empezar",0,14);
+  text("Flechas: controlar camara lenta",0,28);
+  text("Shift: Pausa", 0, 42);
+  text("Control: Play", 0, 56);
+  popMatrix();
+}
+
 void mostrarStats(boolean mostrarTodo) {
   pushMatrix();  // Astronauta
   translate(0,8*height/9);
@@ -176,41 +210,62 @@ void mostrarStats(boolean mostrarTodo) {
 
 Astronauta josefa; 
 PImage fondo;
+
 void setup() {
     size(960,480);
     fondo = loadImage("image.png");
     background(fondo);
     stroke(255);
-    josefa = new Astronauta(160, 0, 60, 6);
+    cp5 = new ControlP5(this);
+    cp5.addSlider("vAstronauta").setPosition(width/5, height/4).setRange(0,50).setSize(3*width/5, 20).setValue(6);
+    cp5.addSlider("vBrazo").setPosition(width/5, height/2).setRange(0,2000).setSize(3*width/5, 20).setValue(500);
+    //if (finReset) {
+      cp5.hide();
+    //}
+    josefa = new Astronauta(160, 0, 60, cp5.getValue("vAstronauta"));
     
 }
     
 void draw() {
-    // Para dejar estela:
+    // Para dejar estela (funcionaba sin la imagen de fondo):
     /*fill(0, 120);
     rect(0, 0, width, height);*/
-    background(fondo);
-    pushMatrix();
-    translate(0, height/5); // Empieza en medio
     
-    dibujarBarra();
-    
-    
-    fill(255);
-    josefa.dibujar();
-    josefa.actualizarPos();
-    if (josefa.pos() > width/2 && !josefa.manca() && SLOWMO>0) { //lanzamiento
-      josefa.lanzarBrazo(500);
+    if (reset) { // inicio
+      background(fondo); // Se tapa todo
+      cp5.show(); // se muestran los sliders
+      mostrarControles(); // y los controles...
+      if (finReset) {
+        reset = false;
+        josefa = new Astronauta(160, 0, 60, cp5.getValue("vAstronauta"));
+        SLOWMO = 1;
+        cp5.hide();
+      }
     }
-    else if (josefa.colision(josefa.brazo) && josefa.manca()) { //lo atrapa (tiempo va al reves)
-      josefa.atraparBrazo(josefa.brazo.vel());
-    }
-    fill(255);
-    popMatrix();
-    mostrarStats(josefa.pos() > 2*width/5 || josefa.manca()); // muestra los stats (los del brazo solo una vez lanzado)
-    if(josefa.pos() > width || josefa.pos() < 0) {
-      //Se ha salido. reseteamos
-      setup();
+    else { // Resto:
+      background(fondo);
+      pushMatrix();
+      translate(0, height/5); // Empieza en medio
+      
+      dibujarBarra();
+      
+      
+      fill(255);
+      josefa.dibujar();
+      josefa.actualizarPos();
+      if (josefa.pos() > width/2 && !josefa.manca() && SLOWMO>0) { //lanzamiento
+        josefa.lanzarBrazo(cp5.getValue("vBrazo"));
+      }
+      else if (josefa.colision(josefa.brazo) && josefa.manca()) { //lo atrapa (tiempo va al reves)
+        josefa.atraparBrazo(josefa.brazo.vel());
+      }
+      fill(255);
+      popMatrix();
+      mostrarStats(josefa.pos() > 2*width/5 || josefa.manca()); // muestra los stats (los del brazo solo una vez lanzado)
+      if(josefa.pos() > width || josefa.pos() < 0) {
+        //Se ha salido. reseteamos
+        reset = true;
+      }
     }
 }
 
@@ -218,6 +273,13 @@ void draw() {
 
 void keyPressed() {
   // Captura teclas:
+  if (key == 'r' || key == 'R') {
+    reset = true;
+    finReset = false;
+  }
+  else if (key == ' ') {
+     finReset = true; 
+   }
   if (key == CODED) { // Teclas especiales
     
     if (keyCode == RIGHT) { // Aumenta "velocidad de reproduccion" de la simulacion
@@ -238,7 +300,5 @@ void keyPressed() {
     else if (keyCode == SHIFT) { // Para el tiempo
       SLOWMO = 0;
     }
-    // Nota: al poner el tiempo hacia atrás, el astronauta no recoge su brazo, 
-    // habría que cambiarlo para que fuera como un video... 
   }
 }
